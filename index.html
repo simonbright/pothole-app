@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="night">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
@@ -8,13 +8,57 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Pothole Log">
-  <meta name="description" content="Log potholes in Toronto with one tap.">
-  <title>Toronto Pothole Log</title>
-  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Ccircle cx='16' cy='16' r='14' fill='%23dc2626'/%3E%3Ctext x='16' y='21' text-anchor='middle' font-size='14' font-family='system-ui,sans-serif' font-weight='900' fill='white'%3E!%3C/text%3E%3C/svg%3E">
-  <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Toronto%20Pothole%20Log%22,%22short_name%22:%22Pothole%20Log%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22theme_color%22:%22%23dc2626%22,%22background_color%22:%22%2309090b%22}">
+  <meta name="description" content="Log potholes with one tap.">
+  <title>Pothole Log</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.svg" sizes="any">
+  <link rel="apple-touch-icon" href="/favicon.svg">
+  <link rel="manifest" href="data:application/manifest+json,{%22name%22:%22Pothole%20Log%22,%22short_name%22:%22Pothole%20Log%22,%22start_url%22:%22.%22,%22display%22:%22standalone%22,%22theme_color%22:%22%23dc2626%22,%22background_color%22:%22%2309090b%22}">
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
   <style>
     *, *::before, *::after { box-sizing: border-box; }
+
+    :root, [data-theme="night"] {
+      --bg: #09090b;
+      --bg-elevated: rgba(24, 24, 27, 0.6);
+      --bg-panel: #18181b;
+      --bg-input: #09090b;
+      --bg-tab: #18181b;
+      --bg-tab-active: #27272a;
+      --border: rgba(39, 39, 42, 0.8);
+      --border-strong: rgba(63, 63, 70, 0.8);
+      --text: #fff;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --title-gradient-top: #fff;
+      --title-gradient-bottom: #a1a1aa;
+      --topbar-bg: rgba(9, 9, 11, 0.95);
+      --backdrop: rgba(0, 0, 0, 0.55);
+      --handle: #3f3f46;
+      --history-row-hover: rgba(39, 39, 42, 0.5);
+      --map-tiles: voyager;
+    }
+
+    [data-theme="day"] {
+      --bg: #f4f4f5;
+      --bg-elevated: #fff;
+      --bg-panel: #fff;
+      --bg-input: #f4f4f5;
+      --bg-tab: #e4e4e7;
+      --bg-tab-active: #fff;
+      --border: rgba(0, 0, 0, 0.08);
+      --border-strong: rgba(0, 0, 0, 0.12);
+      --text: #18181b;
+      --text-secondary: #52525b;
+      --text-muted: #71717a;
+      --title-gradient-top: #18181b;
+      --title-gradient-bottom: #52525b;
+      --topbar-bg: rgba(244, 244, 245, 0.95);
+      --backdrop: rgba(0, 0, 0, 0.35);
+      --handle: #d4d4d8;
+      --history-row-hover: rgba(0, 0, 0, 0.04);
+      --map-tiles: voyager;
+    }
 
     html, body {
       height: 100%;
@@ -24,10 +68,11 @@
     }
 
     body {
-      background: #09090b;
-      color: #fff;
+      background: var(--bg);
+      color: var(--text);
       font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       -webkit-font-smoothing: antialiased;
+      transition: background 0.2s, color 0.2s;
     }
 
     .shell {
@@ -39,49 +84,92 @@
     .topbar {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      padding: 0.75rem 1rem calc(0.75rem + env(safe-area-inset-top));
-      border-bottom: 1px solid rgba(39, 39, 42, 0.8);
-      background: rgba(9, 9, 11, 0.95);
+      justify-content: flex-end;
+      gap: 0.35rem;
+      padding: 0.5rem 0.75rem calc(0.5rem + env(safe-area-inset-top));
+      background: var(--topbar-bg);
       backdrop-filter: blur(8px);
-      position: sticky;
-      top: 0;
+      flex-shrink: 0;
       z-index: 30;
     }
 
-    .tabs {
+    .bottom-nav {
       display: flex;
-      gap: 0.35rem;
-      background: #18181b;
-      padding: 0.25rem;
-      border-radius: 0.65rem;
+      gap: 0.5rem;
+      padding: 0.4rem 0.75rem calc(0.5rem + env(safe-area-inset-bottom));
+      border-top: 1px solid var(--border);
+      background: var(--topbar-bg);
+      backdrop-filter: blur(12px);
+      flex-shrink: 0;
+      z-index: 30;
     }
 
-    .tab {
+    .nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.2rem;
       border: 0;
       background: transparent;
-      color: #71717a;
-      font-size: 0.8125rem;
+      color: var(--text-muted);
+      font-size: 0.6875rem;
       font-weight: 700;
-      padding: 0.45rem 0.85rem;
-      border-radius: 0.5rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 0.6rem 0.5rem;
+      border-radius: 0.75rem;
+      min-height: 3.5rem;
       cursor: pointer;
+      touch-action: manipulation;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    .tab.active {
-      background: #27272a;
-      color: #fff;
+    .nav-item.active {
+      background: var(--bg-tab-active);
+      color: var(--text);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
     }
 
-    .auth-btn {
+    .nav-item .nav-icon {
+      font-size: 1.35rem;
+      line-height: 1;
+    }
+
+    .nav-item.nav-hit.active {
+      color: #ef4444;
+    }
+
+    .nav-item[hidden] {
+      display: none !important;
+    }
+
+    .content-area {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .icon-btn, .auth-btn {
       border: 0;
-      background: transparent;
-      color: #a1a1aa;
-      font-size: 0.8125rem;
+      background: var(--bg-tab);
+      color: var(--text-secondary);
+      font-size: 0.75rem;
       font-weight: 600;
       cursor: pointer;
-      padding: 0.35rem 0.5rem;
-      max-width: 8rem;
+      padding: 0.5rem 0.6rem;
+      border-radius: 0.5rem;
+      line-height: 1;
+      min-height: 2.25rem;
+    }
+
+    .icon-btn { font-size: 1rem; padding: 0.45rem 0.55rem; }
+
+    .auth-btn {
+      max-width: 5.5rem;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
@@ -94,48 +182,39 @@
       flex-direction: column;
     }
 
-    .view.active {
-      display: flex;
+    .view.active { display: flex; }
+
+    .view:not(.active) {
+      display: none !important;
     }
+
+    .view[hidden] { display: none !important; }
 
     .app {
       height: 100%;
-      width: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: space-between;
-      padding: 1.5rem 1.5rem 2rem;
+      flex: 1;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      padding: 0.5rem 1rem 0.75rem;
     }
 
-    .header { width: 100%; text-align: center; }
-
-    .eyebrow {
-      margin: 0 0 0.5rem;
-      font-size: 0.75rem;
-      font-weight: 700;
-      letter-spacing: 0.4em;
-      text-transform: uppercase;
-      color: rgba(239, 68, 68, 0.9);
+    .header {
+      text-align: center;
+      padding: 0.5rem 0.5rem 0;
     }
 
     .title {
       margin: 0;
-      font-size: 1.875rem;
-      font-weight: 900;
-      letter-spacing: -0.025em;
-      background: linear-gradient(to bottom, #fff, #a1a1aa);
-      -webkit-background-clip: text;
-      background-clip: text;
-      color: transparent;
+      font-size: clamp(1.25rem, 5.5vw, 1.75rem);
+      font-weight: 800;
+      line-height: 1.3;
+      color: var(--text);
+      letter-spacing: -0.02em;
     }
 
-    .subtitle {
-      margin: 0.5rem auto 0;
-      max-width: 20rem;
-      font-size: 0.75rem;
-      color: #71717a;
-      line-height: 1.4;
+    .title-accent {
+      color: #ef4444;
+      white-space: nowrap;
     }
 
     .button-wrap {
@@ -143,12 +222,23 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: auto 0;
+      min-height: 0;
+      padding: 0.5rem;
+    }
+
+    .hit-target {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem;
+      margin: -1.25rem;
     }
 
     .pulse-ring {
       position: absolute;
-      inset: 0;
+      width: min(72vmin, 340px);
+      height: min(72vmin, 340px);
       border-radius: 9999px;
       border: 4px solid rgba(239, 68, 68, 0.4);
       pointer-events: none;
@@ -162,128 +252,196 @@
 
     @keyframes pulse-ring {
       0% { transform: scale(1); opacity: 0.6; }
-      100% { transform: scale(1.25); opacity: 0; }
+      100% { transform: scale(1.2); opacity: 0; }
     }
 
     .hit-button {
       position: relative;
       z-index: 1;
-      width: min(72vw, 320px);
-      height: min(72vw, 320px);
+      width: min(72vmin, 340px);
+      height: min(72vmin, 340px);
       border: 0;
       border-radius: 9999px;
       background: linear-gradient(to bottom, #ef4444, #b91c1c);
       color: #fff;
-      font: 900 clamp(3rem, 12vw, 3.75rem) / 1 system-ui, sans-serif;
-      letter-spacing: 0.05em;
+      font: 900 clamp(3.5rem, 16vw, 5rem) / 1 system-ui, sans-serif;
+      letter-spacing: 0.04em;
       cursor: pointer;
       user-select: none;
       outline: none;
       touch-action: manipulation;
-      box-shadow: 0 20px 50px rgba(220, 38, 38, 0.45), inset 0 -8px 24px rgba(0, 0, 0, 0.18), inset 0 8px 24px rgba(255, 255, 255, 0.12);
-      transition: transform 80ms ease;
+      -webkit-touch-callout: none;
+      box-shadow: 0 24px 60px rgba(220, 38, 38, 0.5), inset 0 -10px 28px rgba(0, 0, 0, 0.2), inset 0 10px 28px rgba(255, 255, 255, 0.14);
+      transition: transform 60ms ease;
     }
 
-    .hit-button:not(:disabled):active { transform: scale(0.94); }
+    .hit-button:not(:disabled):active { transform: scale(0.95); }
     .hit-button:disabled { filter: saturate(0.6) brightness(0.8); cursor: wait; }
 
-    .status-wrap { width: 100%; max-width: 24rem; }
+    .status-wrap { width: 100%; max-width: 28rem; margin: 0 auto; }
 
     .status {
       margin: 0;
-      min-height: 3.5rem;
-      padding: 1rem 1.5rem;
+      min-height: 2.75rem;
+      padding: 0.75rem 1rem;
       display: flex;
       align-items: center;
       justify-content: center;
       text-align: center;
-      font-size: 0.875rem;
+      font-size: 0.8125rem;
       font-weight: 600;
-      border-radius: 1rem;
-      border: 1px solid rgba(39, 39, 42, 0.8);
-      background: rgba(24, 24, 27, 0.6);
-      color: #a1a1aa;
+      border-radius: 0.75rem;
+      border: 1px solid var(--border);
+      background: var(--bg-elevated);
+      color: var(--text-secondary);
     }
 
-    .status.loading { color: #fbbf24; border-color: rgba(245, 158, 11, 0.2); background: rgba(245, 158, 11, 0.05); }
-    .status.success { color: #34d399; border-color: rgba(16, 185, 129, 0.2); background: rgba(16, 185, 129, 0.05); }
-    .status.error { color: #f87171; border-color: rgba(239, 68, 68, 0.2); background: rgba(239, 68, 68, 0.05); }
+    .status.loading { color: #d97706; border-color: rgba(245, 158, 11, 0.25); background: rgba(245, 158, 11, 0.08); }
+    .status.success { color: #059669; border-color: rgba(16, 185, 129, 0.25); background: rgba(16, 185, 129, 0.08); }
+    .status.error { color: #dc2626; border-color: rgba(239, 68, 68, 0.25); background: rgba(239, 68, 68, 0.08); }
+
+    [data-theme="night"] .status.loading { color: #fbbf24; }
+    [data-theme="night"] .status.success { color: #34d399; }
+    [data-theme="night"] .status.error { color: #f87171; }
 
     .history-view {
-      padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
+      flex: 1;
+      min-height: 0;
+      padding: 0.65rem 0.75rem 0.5rem;
       overflow-y: auto;
+      -webkit-overflow-scrolling: touch;
     }
 
     .history-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 0.75rem;
+      margin-bottom: 0.5rem;
+      padding: 0 0.25rem;
     }
 
     .history-header h2 {
       margin: 0;
-      font-size: 1.125rem;
+      font-size: 1rem;
       font-weight: 800;
     }
 
-    .history-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 0.65rem;
+    .history-table-wrap {
+      overflow-x: auto;
+      border: 1px solid var(--border);
+      border-radius: 0.65rem;
+      background: var(--bg-elevated);
     }
 
-    .history-item {
-      border: 1px solid rgba(39, 39, 42, 0.8);
-      background: rgba(24, 24, 27, 0.6);
-      border-radius: 0.85rem;
-      padding: 0.85rem 1rem;
-    }
-
-    .history-item time {
-      display: block;
-      font-size: 0.6875rem;
-      font-weight: 700;
-      letter-spacing: 0.05em;
-      text-transform: uppercase;
-      color: #71717a;
-      margin-bottom: 0.35rem;
-    }
-
-    .history-item .address {
-      font-size: 0.875rem;
-      font-weight: 600;
-      color: #e4e4e7;
-      line-height: 1.35;
-      margin-bottom: 0.25rem;
-    }
-
-    .history-item .coords {
+    .history-table {
+      width: 100%;
+      border-collapse: collapse;
       font-size: 0.75rem;
-      color: #71717a;
+    }
+
+    .history-table th {
+      text-align: left;
+      padding: 0.45rem 0.6rem;
+      font-size: 0.625rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-tab);
+      white-space: nowrap;
+    }
+
+    .history-table td {
+      padding: 0.4rem 0.6rem;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-secondary);
+      vertical-align: top;
+      line-height: 1.3;
+    }
+
+    .history-table tr:last-child td { border-bottom: 0; }
+    .history-table tbody tr:hover td { background: var(--history-row-hover); }
+
+    .history-table .when {
+      white-space: nowrap;
       font-variant-numeric: tabular-nums;
+      color: var(--text-muted);
+      width: 1%;
+    }
+
+    .history-table .city {
+      white-space: nowrap;
+      font-weight: 700;
+      color: var(--text);
+      width: 1%;
+    }
+
+    .history-table .address {
+      font-weight: 500;
+      color: var(--text);
+      white-space: normal;
+      word-break: break-word;
+      line-height: 1.35;
+      min-width: 7rem;
+    }
+
+    .history-table .coords {
+      font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+      font-size: 0.6875rem;
+      color: var(--text-muted);
+      width: 1%;
+    }
+
+    .history-table .acc {
+      white-space: nowrap;
+      font-variant-numeric: tabular-nums;
+      text-align: right;
+      width: 1%;
     }
 
     .history-empty, .history-loading, .history-error {
       text-align: center;
-      color: #71717a;
-      font-size: 0.875rem;
-      padding: 2rem 1rem;
+      color: var(--text-muted);
+      font-size: 0.8125rem;
+      padding: 1.5rem 1rem;
     }
 
-    .history-error { color: #f87171; }
+    .history-error { color: #dc2626; }
+    [data-theme="night"] .history-error { color: #f87171; }
+
+    .city-counts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+      margin-bottom: 0.6rem;
+      padding: 0 0.15rem;
+    }
+
+    .city-chip {
+      font-size: 0.6875rem;
+      font-weight: 700;
+      padding: 0.35rem 0.6rem;
+      border-radius: 9999px;
+      background: var(--bg-tab);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .city-chip strong {
+      color: var(--text);
+      font-weight: 800;
+    }
 
     .backdrop {
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.55);
+      background: var(--backdrop);
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.25s ease;
-      z-index: 40;
+      z-index: 2000;
     }
 
     .backdrop.open { opacity: 1; pointer-events: auto; }
@@ -293,29 +451,29 @@
       left: 0;
       right: 0;
       bottom: 0;
-      background: #18181b;
-      border-top: 1px solid rgba(63, 63, 70, 0.8);
+      background: var(--bg-panel);
+      border-top: 1px solid var(--border-strong);
       border-radius: 1.25rem 1.25rem 0 0;
       display: flex;
       flex-direction: column;
       transform: translateY(100%);
       transition: transform 0.28s cubic-bezier(0.32, 0.72, 0, 1);
-      z-index: 50;
+      z-index: 2010;
       padding: 1rem 1rem calc(1rem + env(safe-area-inset-bottom));
     }
 
     .panel.open { transform: translateY(0); }
+    .review-panel { max-height: 55vh; }
+    .auth-panel { max-height: 70vh; }
 
-    .review-panel { height: min(82vh, 640px); }
-
-    .auth-panel { max-height: 85vh; }
+    .review-map-wrap { display: none; }
 
     .panel-handle {
       width: 2.5rem;
       height: 0.25rem;
       margin: 0 auto 0.75rem;
       border-radius: 9999px;
-      background: #3f3f46;
+      background: var(--handle);
     }
 
     .panel-title {
@@ -328,7 +486,7 @@
     .review-hint {
       margin: 0 0 0.75rem;
       font-size: 0.75rem;
-      color: #71717a;
+      color: var(--text-muted);
       text-align: center;
     }
 
@@ -337,34 +495,32 @@
       min-height: 0;
       border-radius: 0.75rem;
       overflow: hidden;
-      border: 1px solid rgba(63, 63, 70, 0.8);
+      border: 1px solid var(--border-strong);
       touch-action: none;
     }
 
-    .location-info {
-      margin: 0.65rem 0 0;
-      text-align: center;
-    }
+    .location-info { margin: 0.65rem 0 0; text-align: center; }
 
     .address-display {
       margin: 0 0 0.25rem;
       font-size: 0.8125rem;
       font-weight: 600;
-      color: #e4e4e7;
+      color: var(--text);
       line-height: 1.35;
     }
 
-    .address-display.loading { color: #71717a; font-style: italic; }
+    .address-display.loading { color: var(--text-muted); font-style: italic; }
 
     .coord-display {
       margin: 0;
       font-size: 0.75rem;
       font-weight: 600;
-      color: #a1a1aa;
+      color: var(--text-secondary);
       font-variant-numeric: tabular-nums;
     }
 
-    .coord-display.adjusted { color: #fbbf24; }
+    .coord-display.adjusted { color: #d97706; }
+    [data-theme="night"] .coord-display.adjusted { color: #fbbf24; }
 
     .panel-actions {
       display: grid;
@@ -372,8 +528,6 @@
       gap: 0.65rem;
       margin-top: 0.85rem;
     }
-
-    .panel-actions.single { grid-template-columns: 1fr; }
 
     .btn {
       border: 0;
@@ -386,10 +540,10 @@
     }
 
     .btn:disabled { opacity: 0.55; cursor: wait; }
-    .btn-secondary { background: #27272a; color: #e4e4e7; }
+    .btn-secondary { background: var(--bg-tab); color: var(--text); }
     .btn-primary { background: linear-gradient(to bottom, #ef4444, #b91c1c); color: #fff; }
     .btn-success { background: linear-gradient(to bottom, #34d399, #059669); color: #fff; }
-    .btn-ghost { background: #27272a; color: #a1a1aa; font-size: 0.8125rem; padding: 0.5rem 0.75rem; }
+    .btn-ghost { background: var(--bg-tab); color: var(--text-secondary); font-size: 0.75rem; padding: 0.4rem 0.65rem; border-radius: 0.5rem; border: 0; cursor: pointer; }
 
     .auth-form {
       display: flex;
@@ -400,16 +554,16 @@
     .auth-form label {
       font-size: 0.75rem;
       font-weight: 600;
-      color: #a1a1aa;
+      color: var(--text-secondary);
     }
 
     .auth-form input {
       width: 100%;
-      border: 1px solid rgba(63, 63, 70, 0.8);
-      background: #09090b;
-      color: #fff;
+      border: 1px solid var(--border-strong);
+      background: var(--bg-input);
+      color: var(--text);
       border-radius: 0.65rem;
-      padding: 0.75rem 0.85rem;
+      padding: 0.85rem;
       font-size: 1rem;
     }
 
@@ -421,7 +575,7 @@
     .auth-note {
       margin: 0.75rem 0 0;
       font-size: 0.75rem;
-      color: #71717a;
+      color: var(--text-muted);
       text-align: center;
       line-height: 1.4;
     }
@@ -429,9 +583,11 @@
     .auth-error {
       margin: 0;
       font-size: 0.8125rem;
-      color: #f87171;
+      color: #dc2626;
       text-align: center;
     }
+
+    [data-theme="night"] .auth-error { color: #f87171; }
 
     .pothole-marker {
       background: #dc2626;
@@ -443,44 +599,192 @@
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
       margin: -14px 0 0 -14px;
     }
+
+    .map-view {
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      padding: 0.65rem 0.75rem 0.5rem;
+    }
+
+    .map-view-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.5rem;
+      padding: 0 0.25rem;
+    }
+
+    .map-view-header h2 {
+      margin: 0;
+      font-size: 1rem;
+      font-weight: 800;
+    }
+
+    #allMap {
+      flex: 1;
+      min-height: 0;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      border: 1px solid var(--border-strong);
+      z-index: 1;
+    }
+
+    .map-view .leaflet-container {
+      z-index: 1;
+    }
+
+    .history-table tbody tr.clickable {
+      cursor: pointer;
+    }
+
+    .history-table tbody tr.clickable:active td {
+      background: var(--history-row-hover);
+    }
+
+    .contest-panel { max-height: 88vh; }
+
+    .contest-detail {
+      font-size: 0.8125rem;
+      color: var(--text-secondary);
+      line-height: 1.45;
+      margin: 0 0 0.5rem;
+    }
+
+    .contest-detail strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+
+    .contest-counts {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.35rem;
+      margin: 0.65rem 0;
+    }
+
+    .contest-count {
+      font-size: 0.6875rem;
+      font-weight: 600;
+      padding: 0.3rem 0.55rem;
+      border-radius: 9999px;
+      background: var(--bg-tab);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+    }
+
+    .contest-actions {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      margin-top: 0.5rem;
+    }
+
+    .btn-contest {
+      border: 1px solid var(--border-strong);
+      background: var(--bg-tab);
+      color: var(--text);
+      border-radius: 0.75rem;
+      padding: 0.85rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: left;
+      touch-action: manipulation;
+    }
+
+    .btn-contest:active { background: var(--history-row-hover); }
+    .btn-contest:disabled { opacity: 0.5; cursor: wait; }
+
+    .contest-status {
+      margin: 0.65rem 0 0;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      text-align: center;
+      min-height: 1.25rem;
+      color: var(--text-muted);
+    }
+
+    .contest-status.success { color: #059669; }
+    [data-theme="night"] .contest-status.success { color: #34d399; }
+    .contest-status.error { color: #dc2626; }
+    [data-theme="night"] .contest-status.error { color: #f87171; }
+
+    .fix-location-panel {
+      height: min(88vh, 720px);
+    }
+
+    #fixMap {
+      flex: 1;
+      min-height: 12rem;
+      border-radius: 0.75rem;
+      overflow: hidden;
+      border: 1px solid var(--border-strong);
+      touch-action: none;
+    }
+
+    .fix-location-panel .contest-actions { display: none; }
   </style>
 </head>
 <body>
   <div class="shell">
     <header class="topbar">
-      <nav class="tabs" aria-label="Main navigation">
-        <button id="tabLog" type="button" class="tab active" data-view="log">Log</button>
-        <button id="tabHistory" type="button" class="tab" data-view="history">History</button>
-      </nav>
-      <button id="authBtn" type="button" class="auth-btn">Sign in</button>
+      <button id="themeToggle" type="button" class="icon-btn" aria-label="Toggle day/night mode" title="Day / Night">☀️</button>
+      <button id="authBtn" type="button" class="auth-btn">Email</button>
     </header>
 
-    <section id="logView" class="view active">
-      <main class="app">
-        <header class="header">
-          <p class="eyebrow">Toronto</p>
-          <h1 class="title">Pothole Log</h1>
-          <p class="subtitle">Tap immediately upon impact. Requires high-accuracy active GPS.</p>
-        </header>
-        <div class="button-wrap">
-          <div id="pulse" class="pulse-ring" aria-hidden="true"></div>
-          <button id="hitButton" type="button" class="hit-button">HIT!</button>
-        </div>
-        <div class="status-wrap">
-          <p id="status" class="status" role="status" aria-live="polite">Ready to log strike.</p>
-        </div>
-      </main>
-    </section>
+    <div class="content-area">
+      <section id="logView" class="view active">
+        <main class="app">
+          <header class="header">
+            <h1 class="title">Hit a Pothole? <span class="title-accent">Tab Hit</span></h1>
+          </header>
+          <div class="button-wrap">
+            <div class="hit-target">
+              <div id="pulse" class="pulse-ring" aria-hidden="true"></div>
+              <button id="hitButton" type="button" class="hit-button" aria-label="Log pothole hit">HIT!</button>
+            </div>
+          </div>
+          <div class="status-wrap">
+            <p id="status" class="status" role="status" aria-live="polite">Ready.</p>
+          </div>
+        </main>
+      </section>
 
-    <section id="historyView" class="view history-view">
-      <div class="history-header">
-        <h2>All potholes</h2>
-        <button id="refreshHistory" type="button" class="btn-ghost">Refresh</button>
-      </div>
-      <div id="historyContent">
-        <p class="history-loading">Loading history…</p>
-      </div>
-    </section>
+      <section id="mapView" class="view map-view">
+        <div class="map-view-header">
+          <h2>All potholes</h2>
+          <button id="refreshMap" type="button" class="btn-ghost">↻</button>
+        </div>
+        <div id="allMap" role="application" aria-label="Map of all logged potholes"></div>
+      </section>
+
+      <section id="historyView" class="view history-view">
+        <div class="history-header">
+          <h2>History</h2>
+          <button id="refreshHistory" type="button" class="btn-ghost">↻</button>
+        </div>
+        <div id="historyContent">
+          <p class="history-loading">Loading…</p>
+        </div>
+      </section>
+    </div>
+
+    <nav class="bottom-nav" aria-label="Main navigation">
+      <button id="tabLog" type="button" class="nav-item nav-hit active">
+        <span class="nav-icon" aria-hidden="true">💥</span>
+        Hit
+      </button>
+      <button id="tabMap" type="button" class="nav-item">
+        <span class="nav-icon" aria-hidden="true">🗺️</span>
+        Map
+      </button>
+      <button id="tabHistory" type="button" class="nav-item">
+        <span class="nav-icon" aria-hidden="true">📋</span>
+        History
+      </button>
+    </nav>
   </div>
 
   <div id="backdrop" class="backdrop" aria-hidden="true"></div>
@@ -488,8 +792,10 @@
   <section id="reviewPanel" class="panel review-panel" aria-hidden="true">
     <div class="panel-handle" aria-hidden="true"></div>
     <h2 class="panel-title">Confirm location</h2>
-    <p class="review-hint">Drag the pin if GPS was off. Pinch to zoom the map.</p>
-    <div id="map" role="application" aria-label="Map showing pothole location"></div>
+    <p class="review-hint">Check the address and coordinates below.</p>
+    <div class="review-map-wrap" aria-hidden="true">
+      <div id="reviewMap" role="application" aria-label="Map showing pothole location"></div>
+    </div>
     <div class="location-info">
       <p id="addressDisplay" class="address-display loading">Looking up address…</p>
       <p id="coordDisplay" class="coord-display"></p>
@@ -502,19 +808,52 @@
 
   <section id="authPanel" class="panel auth-panel" aria-hidden="true">
     <div class="panel-handle" aria-hidden="true"></div>
-    <h2 id="authTitle" class="panel-title">Sign in</h2>
+    <h2 class="panel-title">Your email</h2>
     <form id="authForm" class="auth-form">
-      <label for="authEmail">Email</label>
-      <input id="authEmail" type="email" autocomplete="email" required>
-      <label for="authPassword">Password</label>
-      <input id="authPassword" type="password" autocomplete="current-password" minlength="6" required>
+      <label for="authEmail">Email (optional)</label>
+      <input id="authEmail" type="email" autocomplete="email" placeholder="you@example.com">
       <p id="authError" class="auth-error" hidden></p>
-      <button id="authSubmit" type="submit" class="btn btn-primary">Sign in</button>
+      <button id="authSubmit" type="submit" class="btn btn-primary">Save email</button>
     </form>
-    <p class="auth-note">Optional — you can log potholes without an account. Signing in links logs to your profile.</p>
-    <div class="panel-actions single" style="margin-top: 0.65rem;">
-      <button id="authToggle" type="button" class="btn btn-secondary">Create account</button>
-      <button id="cancelAuth" type="button" class="btn btn-secondary" style="margin-top: 0.5rem;">Cancel</button>
+    <p class="auth-note">Totally optional. Saved on this device and attached to your logs.</p>
+    <div class="panel-actions" style="margin-top: 0.65rem; grid-template-columns: 1fr 1fr;">
+      <button id="clearEmail" type="button" class="btn btn-secondary">Clear</button>
+      <button id="cancelAuth" type="button" class="btn btn-secondary">Cancel</button>
+    </div>
+  </section>
+
+  <section id="contestPanel" class="panel contest-panel" aria-hidden="true">
+    <div class="panel-handle" aria-hidden="true"></div>
+    <h2 class="panel-title">Pothole report</h2>
+    <p id="contestAddress" class="contest-detail"></p>
+    <p id="contestCoords" class="contest-detail"></p>
+    <p id="contestWhen" class="contest-detail"></p>
+    <div id="contestCounts" class="contest-counts"></div>
+    <p class="review-hint">Contest this report:</p>
+    <div class="contest-actions">
+      <button type="button" class="btn-contest" data-reason="wrong">Totally wrong — not a pothole</button>
+      <button type="button" class="btn-contest" data-reason="location">Wrong location</button>
+      <button type="button" class="btn-contest" data-reason="fixed">Fixed / not there anymore</button>
+    </div>
+    <p id="contestStatus" class="contest-status" role="status"></p>
+    <div class="panel-actions single" style="margin-top: 0.75rem; grid-template-columns: 1fr;">
+      <button id="closeContest" type="button" class="btn btn-secondary">Close</button>
+    </div>
+  </section>
+
+  <section id="fixLocationPanel" class="panel fix-location-panel" aria-hidden="true">
+    <div class="panel-handle" aria-hidden="true"></div>
+    <h2 class="panel-title">Fix location</h2>
+    <p class="review-hint">Drag the pin to the correct spot, then save.</p>
+    <div id="fixMap" role="application" aria-label="Map to correct pothole location"></div>
+    <div class="location-info">
+      <p id="fixAddressDisplay" class="address-display loading">Looking up address…</p>
+      <p id="fixCoordDisplay" class="coord-display"></p>
+    </div>
+    <p id="fixStatus" class="contest-status" role="status"></p>
+    <div class="panel-actions">
+      <button id="cancelFixLocation" type="button" class="btn btn-secondary">Cancel</button>
+      <button id="saveFixLocation" type="button" class="btn btn-primary">Save updated location</button>
     </div>
   </section>
 
@@ -522,8 +861,11 @@
   <script>
     const SUPABASE_URL = 'https://cfhuqcpojontkwhpkzyn.supabase.co';
     const SUPABASE_KEY = 'sb_publishable_Lw80nzu1rDwZKMJse0kL9g_pMYuqz42';
-    const SESSION_KEY = 'pothole_session';
+    const EMAIL_KEY = 'pothole_email';
+    const THEME_KEY = 'pothole_theme';
+    const SCHEMA_KEY = 'pothole_schema';
 
+    const htmlEl = document.documentElement;
     const hitButton = document.getElementById('hitButton');
     const statusEl = document.getElementById('status');
     const pulseEl = document.getElementById('pulse');
@@ -536,56 +878,123 @@
     const confirmLogBtn = document.getElementById('confirmLog');
     const authBtn = document.getElementById('authBtn');
     const authForm = document.getElementById('authForm');
-    const authTitle = document.getElementById('authTitle');
     const authSubmit = document.getElementById('authSubmit');
-    const authToggle = document.getElementById('authToggle');
     const authError = document.getElementById('authError');
     const cancelAuth = document.getElementById('cancelAuth');
+    const clearEmailBtn = document.getElementById('clearEmail');
+    const themeToggle = document.getElementById('themeToggle');
     const historyContent = document.getElementById('historyContent');
     const refreshHistoryBtn = document.getElementById('refreshHistory');
     const tabLog = document.getElementById('tabLog');
+    const tabMap = document.getElementById('tabMap');
     const tabHistory = document.getElementById('tabHistory');
     const logView = document.getElementById('logView');
+    const mapView = document.getElementById('mapView');
     const historyView = document.getElementById('historyView');
+    const refreshMapBtn = document.getElementById('refreshMap');
+    const contestPanel = document.getElementById('contestPanel');
+    const contestAddress = document.getElementById('contestAddress');
+    const contestCoords = document.getElementById('contestCoords');
+    const contestWhen = document.getElementById('contestWhen');
+    const contestCounts = document.getElementById('contestCounts');
+    const contestStatus = document.getElementById('contestStatus');
+    const closeContestBtn = document.getElementById('closeContest');
+    const fixLocationPanel = document.getElementById('fixLocationPanel');
+    const fixAddressDisplay = document.getElementById('fixAddressDisplay');
+    const fixCoordDisplay = document.getElementById('fixCoordDisplay');
+    const fixStatus = document.getElementById('fixStatus');
+    const saveFixLocationBtn = document.getElementById('saveFixLocation');
+    const cancelFixLocationBtn = document.getElementById('cancelFixLocation');
+
+    const CONTEST_LABELS = {
+      wrong: 'Totally wrong',
+      location: 'Wrong location',
+      fixed: 'Fixed / gone',
+    };
 
     let map = null;
+    let allMap = null;
+    let allMapTileLayer = null;
+    let allMarkersLayer = null;
+    let fixMap = null;
+    let fixMapTileLayer = null;
+    let fixMarker = null;
+    let fixGeocodeTimer = null;
+    let fixOriginalLat = null;
+    let fixOriginalLng = null;
     let marker = null;
     let accuracyCircle = null;
+    let mapTileLayer = null;
     let pendingAccuracy = null;
     let pendingAddress = null;
+    let pendingCity = null;
+    let pendingLat = null;
+    let pendingLng = null;
     let originalLat = null;
     let originalLng = null;
     let reviewOpen = false;
-    let authMode = 'signin';
-    let session = loadSession();
     let geocodeTimer = null;
+    let potholesCache = [];
+    let contestsCache = {};
+    let mapLoaded = false;
     let historyLoaded = false;
+    let selectedPothole = null;
+    let userEmail = localStorage.getItem(EMAIL_KEY) || '';
+    let schema = { address: true, city: false, reporter_email: false, contests: false, _v: 1 };
+    let schemaReady = null;
 
-    function loadSession() {
-      try {
-        const raw = localStorage.getItem(SESSION_KEY);
-        return raw ? JSON.parse(raw) : null;
-      } catch (_) {
-        return null;
+    function loadTheme() {
+      const saved = localStorage.getItem(THEME_KEY);
+      const theme = saved === 'day' ? 'day' : 'night';
+      applyTheme(theme);
+    }
+
+    function applyTheme(theme) {
+      htmlEl.dataset.theme = theme;
+      localStorage.setItem(THEME_KEY, theme);
+      themeToggle.textContent = theme === 'day' ? '🌙' : '☀️';
+      themeToggle.title = theme === 'day' ? 'Switch to night mode' : 'Switch to day mode';
+      document.querySelector('meta[name="theme-color"]').content = theme === 'day' ? '#f4f4f5' : '#dc2626';
+      updateMapTiles(theme);
+    }
+
+    function toggleTheme() {
+      applyTheme(htmlEl.dataset.theme === 'day' ? 'night' : 'day');
+    }
+
+    function mapTileUrl(theme) {
+      const style = theme === 'day' ? 'voyager' : 'dark_all';
+      return `https://{s}.basemaps.cartocdn.com/rastertiles/${style}/{z}/{x}/{y}{r}.png`;
+    }
+
+    function updateMapTiles(theme) {
+      const url = mapTileUrl(theme);
+      const opts = { maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap &copy; CARTO' };
+      if (map && mapTileLayer) {
+        map.removeLayer(mapTileLayer);
+        mapTileLayer = L.tileLayer(url, opts).addTo(map);
+      }
+      if (allMap && allMapTileLayer) {
+        allMap.removeLayer(allMapTileLayer);
+        allMapTileLayer = L.tileLayer(url, opts).addTo(allMap);
+      }
+      if (fixMap && fixMapTileLayer) {
+        fixMap.removeLayer(fixMapTileLayer);
+        fixMapTileLayer = L.tileLayer(url, opts).addTo(fixMap);
       }
     }
 
-    function saveSession(data) {
-      session = data;
-      if (data) {
-        localStorage.setItem(SESSION_KEY, JSON.stringify(data));
-      } else {
-        localStorage.removeItem(SESSION_KEY);
-      }
-      updateAuthButton();
+    function potholeIcon() {
+      return L.divIcon({
+        className: '',
+        html: '<div class="pothole-marker"></div>',
+        iconSize: [28, 28],
+        iconAnchor: [14, 28],
+      });
     }
 
-    function apiHeaders(includeAuth = true) {
-      const headers = { apikey: SUPABASE_KEY };
-      if (includeAuth && session?.access_token) {
-        headers.Authorization = `Bearer ${session.access_token}`;
-      }
-      return headers;
+    function apiHeaders() {
+      return { apikey: SUPABASE_KEY };
     }
 
     function setStatus(message, tone = 'neutral') {
@@ -600,33 +1009,101 @@
     }
 
     function formatCoords(lat, lng, accuracy) {
-      return `${lat.toFixed(5)}, ${lng.toFixed(5)} (±${Math.round(accuracy)} m)`;
+      return `${lat.toFixed(5)}, ${lng.toFixed(5)} (±${Math.round(accuracy)}m)`;
     }
 
-    function formatDate(iso) {
-      return new Date(iso).toLocaleString(undefined, {
-        month: 'short', day: 'numeric', year: 'numeric',
-        hour: 'numeric', minute: '2-digit',
+    function formatCoordsOnly(lat, lng) {
+      return `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+    }
+
+    function formatHistoryAddress(address) {
+      if (!address) return '—';
+      return address.replace(/, Canada$/i, '');
+    }
+
+    function shortAddress(address) {
+      if (!address) return '—';
+      const first = address.split(',')[0].trim();
+      return first.length > 28 ? `${first.slice(0, 26)}…` : first;
+    }
+
+    function shortWhen(iso) {
+      if (!iso) return '—';
+      const d = new Date(iso);
+      return d.toLocaleString(undefined, { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+    }
+
+    function extractCity(address) {
+      if (!address) return null;
+      const parts = address.split(',').map((p) => p.trim());
+      const provinces = [
+        'Ontario', 'Quebec', 'British Columbia', 'Alberta', 'Manitoba',
+        'Saskatchewan', 'Nova Scotia', 'New Brunswick', 'Prince Edward Island',
+        'Newfoundland and Labrador', 'Northwest Territories', 'Yukon', 'Nunavut',
+      ];
+      const skip = /Golden Horseshoe|Greater .* Area|Regional Municipality|County|District|Division/i;
+      const provIdx = parts.findIndex((p) => provinces.includes(p));
+      if (provIdx > 0) {
+        for (let i = provIdx - 1; i >= 0; i--) {
+          if (skip.test(parts[i])) continue;
+          const city = parts[i].split(/[—–]/)[0].trim();
+          if (city && city.length < 40) return city;
+        }
+      }
+      return parts.length > 1 ? parts[parts.length - 3]?.split(/[—–]/)[0].trim() || null : null;
+    }
+
+    function cityForRow(row) {
+      return row.city || extractCity(row.address) || 'Unknown';
+    }
+
+    function buildCityCounts(rows) {
+      const counts = {};
+      rows.forEach((row) => {
+        const city = cityForRow(row);
+        counts[city] = (counts[city] || 0) + 1;
       });
+      return Object.entries(counts).sort((a, b) => b[1] - a[1]);
     }
 
     function switchView(view) {
-      const isLog = view === 'log';
-      tabLog.classList.toggle('active', isLog);
-      tabHistory.classList.toggle('active', !isLog);
-      logView.classList.toggle('active', isLog);
-      historyView.classList.toggle('active', !isLog);
-      if (!isLog && !historyLoaded) loadHistory();
+      tabLog.classList.toggle('active', view === 'log');
+      tabMap.classList.toggle('active', view === 'map');
+      tabHistory.classList.toggle('active', view === 'history');
+      logView.classList.toggle('active', view === 'log');
+      mapView.classList.toggle('active', view === 'map');
+      historyView.classList.toggle('active', view === 'history');
+      if (view === 'history' && !historyLoaded) loadHistory();
+      if (view === 'map') {
+        if (!mapLoaded) loadAllMap();
+        else requestAnimationFrame(() => { if (allMap) allMap.invalidateSize(); });
+      }
     }
 
-    function updateAuthButton() {
-      if (session?.user?.email) {
-        authBtn.textContent = session.user.email.split('@')[0];
-        authBtn.title = `${session.user.email} — tap to sign out`;
+    function invalidateData() {
+      potholesCache = [];
+      historyLoaded = false;
+      mapLoaded = false;
+    }
+
+    function updateEmailButton() {
+      if (userEmail) {
+        authBtn.textContent = userEmail.split('@')[0];
+        authBtn.title = userEmail;
       } else {
-        authBtn.textContent = 'Sign in';
-        authBtn.title = 'Optional sign in';
+        authBtn.textContent = 'Email';
+        authBtn.title = 'Add optional email';
       }
+    }
+
+    function saveEmail(email) {
+      userEmail = email.trim();
+      if (userEmail) {
+        localStorage.setItem(EMAIL_KEY, userEmail);
+      } else {
+        localStorage.removeItem(EMAIL_KEY);
+      }
+      updateEmailButton();
     }
 
     function openPanel(panel) {
@@ -638,7 +1115,11 @@
 
     function closePanel(panel) {
       panel.classList.remove('open');
-      if (!reviewPanel.classList.contains('open') && !authPanel.classList.contains('open')) {
+      const anyOpen = reviewPanel.classList.contains('open')
+        || authPanel.classList.contains('open')
+        || contestPanel.classList.contains('open')
+        || fixLocationPanel.classList.contains('open');
+      if (!anyOpen) {
         backdrop.classList.remove('open');
         backdrop.setAttribute('aria-hidden', 'true');
       }
@@ -648,7 +1129,6 @@
     function openReview() {
       reviewOpen = true;
       openPanel(reviewPanel);
-      requestAnimationFrame(() => { if (map) map.invalidateSize(); });
     }
 
     function closeReview() {
@@ -662,12 +1142,12 @@
 
     function openAuth() {
       authError.hidden = true;
+      document.getElementById('authEmail').value = userEmail;
       openPanel(authPanel);
     }
 
-    function closeAuth() {
+    function closeAuthPanel() {
       closePanel(authPanel);
-      authForm.reset();
       authError.hidden = true;
     }
 
@@ -676,12 +1156,14 @@
       const response = await fetch(url, {
         headers: {
           'Accept-Language': 'en',
-          'User-Agent': 'TorontoPotholeLog/1.0 (https://github.com/pothole-app)',
+          'User-Agent': 'PotholeLog/1.0 (https://pothole-app.netlify.app)',
         },
       });
       if (!response.ok) throw new Error('Address lookup failed');
       const data = await response.json();
-      return data.display_name || 'Address unavailable';
+      const address = data.display_name || 'Address unavailable';
+      const city = data.address?.city || data.address?.town || data.address?.village || extractCity(address);
+      return { address, city };
     }
 
     function scheduleGeocode(lat, lng, adjusted = false) {
@@ -693,11 +1175,14 @@
 
       geocodeTimer = setTimeout(async () => {
         try {
-          pendingAddress = await reverseGeocode(lat, lng);
+          const result = await reverseGeocode(lat, lng);
+          pendingAddress = result.address;
+          pendingCity = result.city;
           addressDisplay.textContent = pendingAddress;
           addressDisplay.className = 'address-display';
         } catch (_) {
           pendingAddress = null;
+          pendingCity = null;
           addressDisplay.textContent = 'Address unavailable';
           addressDisplay.className = 'address-display';
         }
@@ -707,21 +1192,15 @@
     function initMap(lat, lng, accuracy) {
       originalLat = lat;
       originalLng = lng;
+      const theme = htmlEl.dataset.theme || 'night';
 
       if (!map) {
-        map = L.map('map', { zoomControl: true, attributionControl: true, maxZoom: 20 });
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+        map = L.map('reviewMap', { zoomControl: true, attributionControl: true, maxZoom: 20 });
+        mapTileLayer = L.tileLayer(mapTileUrl(theme), {
           maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap &copy; CARTO',
         }).addTo(map);
 
-        const icon = L.divIcon({
-          className: '',
-          html: '<div class="pothole-marker"></div>',
-          iconSize: [28, 28],
-          iconAnchor: [14, 28],
-        });
-
-        marker = L.marker([lat, lng], { draggable: true, icon }).addTo(map);
+        marker = L.marker([lat, lng], { draggable: true, icon: potholeIcon() }).addTo(map);
         marker.on('dragend', () => {
           const { lat: mLat, lng: mLng } = marker.getLatLng();
           const moved = Math.abs(mLat - originalLat) > 0.00001 || Math.abs(mLng - originalLng) > 0.00001;
@@ -729,6 +1208,7 @@
         });
       } else {
         marker.setLatLng([lat, lng]);
+        updateMapTiles(theme);
       }
 
       if (accuracyCircle) map.removeLayer(accuracyCircle);
@@ -743,78 +1223,521 @@
 
     function getCurrentPosition() {
       return new Promise((resolve, reject) => {
-        if (!navigator.geolocation) {
-          reject(new Error('Geolocation is not supported on this device.'));
+        if (!window.isSecureContext) {
+          reject(new Error('GPS needs HTTPS. Use https://pothole-app.netlify.app on your phone, or test GPS on this device only via localhost.'));
           return;
         }
-        navigator.geolocation.getCurrentPosition(resolve, (error) => {
-          const messages = {
-            1: 'GPS access denied. Enable permissions in device settings.',
-            2: 'GPS hardware unavailable. Ensure clear sky exposure.',
-            3: 'Location sync timed out. Try hitting again.',
-          };
-          reject(new Error(messages[error.code] || 'Could not lock GPS coordinates.'));
-        }, { enableHighAccuracy: true, timeout: 12000, maximumAge: 0 });
+        if (!navigator.geolocation) {
+          reject(new Error('Geolocation not supported.'));
+          return;
+        }
+
+        const TARGET_ACCURACY = 30;
+        const MAX_WAIT_MS = 2000;
+        const FAST_EXIT_MS = 900;
+        const deadline = Date.now() + MAX_WAIT_MS;
+        let best = null;
+        let watchId = null;
+        let settled = false;
+        let firstFixAt = null;
+
+        const messages = {
+          1: 'GPS denied — enable in settings.',
+          2: 'GPS unavailable.',
+          3: 'GPS timed out — try again.',
+        };
+
+        const finish = (position) => {
+          if (settled) return;
+          settled = true;
+          if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+          resolve(position);
+        };
+
+        const fail = (error) => {
+          if (settled) return;
+          if (best) {
+            finish(best);
+            return;
+          }
+          settled = true;
+          if (watchId !== null) navigator.geolocation.clearWatch(watchId);
+          reject(new Error(messages[error.code] || 'Could not get location.'));
+        };
+
+        const onUpdate = (position) => {
+          const acc = position.coords.accuracy;
+          const now = Date.now();
+          if (!best || acc < best.coords.accuracy) {
+            best = position;
+            if (!firstFixAt) firstFixAt = now;
+            setStatus(`GPS ±${Math.round(acc)}m`, 'loading');
+          }
+          if (acc <= TARGET_ACCURACY) finish(position);
+          else if (firstFixAt && now - firstFixAt >= FAST_EXIT_MS) finish(best);
+        };
+
+        watchId = navigator.geolocation.watchPosition(onUpdate, fail, {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: MAX_WAIT_MS,
+        });
+
+        navigator.geolocation.getCurrentPosition(onUpdate, () => {}, {
+          enableHighAccuracy: true,
+          maximumAge: 0,
+          timeout: MAX_WAIT_MS,
+        });
+
+        const poll = setInterval(() => {
+          if (settled) {
+            clearInterval(poll);
+            return;
+          }
+          if (Date.now() >= deadline) {
+            clearInterval(poll);
+            if (best) finish(best);
+            else fail({ code: 3 });
+          }
+        }, 100);
       });
     }
 
-    async function insertPothole(latitude, longitude, accuracy, address) {
-      const payload = { latitude, longitude, accuracy, address };
-      if (session?.user?.id) payload.user_id = session.user.id;
+    async function supabaseJson(url, options = {}) {
+      const response = await fetch(url, options);
+      let body = null;
+      try { body = await response.json(); } catch (_) {}
+      return { response, body };
+    }
 
-      const response = await fetch(`${SUPABASE_URL}/rest/v1/potholes`, {
+    function isMissingColumnError(body) {
+      return body?.code === 'PGRST204' || /could not find the .* column/i.test(body?.message || '');
+    }
+
+    function saveSchema() {
+      localStorage.setItem(SCHEMA_KEY, JSON.stringify(schema));
+    }
+
+    async function detectSchema() {
+      try {
+        const cached = JSON.parse(localStorage.getItem(SCHEMA_KEY));
+        if (cached?._v === 2) {
+          schema = cached;
+          return;
+        }
+        if (cached?._v === 1) {
+          schema = { ...cached, contests: true, _v: 2 };
+          saveSchema();
+          return;
+        }
+      } catch (_) {}
+      schema = { address: true, city: false, reporter_email: false, contests: true, _v: 2 };
+      saveSchema();
+    }
+
+    function buildInsertPayload(latitude, longitude, accuracy, address, city) {
+      const payload = { latitude, longitude, accuracy };
+      if (address) payload.address = address;
+      if (city && schema.city) payload.city = city;
+      if (userEmail && schema.reporter_email) payload.reporter_email = userEmail;
+      return payload;
+    }
+
+    async function insertPothole(latitude, longitude, accuracy, address, city) {
+      await schemaReady;
+
+      let payload = buildInsertPayload(latitude, longitude, accuracy, address, city);
+      let { response, body } = await supabaseJson(`${SUPABASE_URL}/rest/v1/potholes`, {
         method: 'POST',
         headers: {
-          ...apiHeaders(true),
+          ...apiHeaders(),
           'Content-Type': 'application/json',
           Prefer: 'return=minimal',
         },
         body: JSON.stringify(payload),
       });
 
+      if (!response.ok && isMissingColumnError(body)) {
+        const match = body.message.match(/'(\w+)' column/);
+        if (match) {
+          schema[match[1]] = false;
+          saveSchema();
+        }
+        payload = buildInsertPayload(latitude, longitude, accuracy, address, city);
+        ({ response, body } = await supabaseJson(`${SUPABASE_URL}/rest/v1/potholes`, {
+          method: 'POST',
+          headers: {
+            ...apiHeaders(),
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal',
+          },
+          body: JSON.stringify(payload),
+        }));
+      }
+
       if (!response.ok) {
-        let detail = `Request failed (${response.status})`;
-        try {
-          const body = await response.json();
-          if (body.message) detail = body.message;
-          if (body.hint) detail += ` — ${body.hint}`;
-        } catch (_) {}
+        let detail = body?.message || `Request failed (${response.status})`;
+        if (body?.hint) detail += ` — ${body.hint}`;
         throw new Error(detail);
       }
     }
 
     async function fetchPotholes() {
-      const response = await fetch(
-        `${SUPABASE_URL}/rest/v1/potholes?select=id,latitude,longitude,accuracy,address,created_at&order=created_at.desc&limit=200`,
-        { headers: apiHeaders(false) }
+      await schemaReady;
+      const headers = apiHeaders();
+      const cols = ['id', 'latitude', 'longitude', 'accuracy', 'address', 'created_at'];
+      if (schema.city) cols.splice(cols.indexOf('created_at'), 0, 'city');
+      const query = `select=${cols.join(',')}&order=created_at.desc&limit=200&address=not.is.null`;
+
+      const { response, body } = await supabaseJson(
+        `${SUPABASE_URL}/rest/v1/potholes?${query}`,
+        { headers }
+      );
+
+      if (response.ok) return body;
+
+      if (isMissingColumnError(body)) {
+        const match = body.message.match(/'(\w+)' column/);
+        if (match) {
+          schema[match[1]] = false;
+          saveSchema();
+          return fetchPotholes();
+        }
+      }
+
+      throw new Error(body?.message || 'Could not load history.');
+    }
+
+    async function fetchContestCounts() {
+      if (!schema.contests) return {};
+      const { response, body } = await supabaseJson(
+        `${SUPABASE_URL}/rest/v1/contests?select=pothole_id,reason`,
+        { headers: apiHeaders() }
       );
       if (!response.ok) {
-        let detail = `Could not load history (${response.status})`;
-        try {
-          const body = await response.json();
-          if (body.message) detail = body.message;
-        } catch (_) {}
-        throw new Error(detail);
+        if (response.status === 404 || isMissingColumnError(body)) {
+          schema.contests = false;
+          saveSchema();
+        }
+        return {};
       }
-      return response.json();
+      const counts = {};
+      body.forEach((c) => {
+        if (!counts[c.pothole_id]) counts[c.pothole_id] = { wrong: 0, location: 0, fixed: 0 };
+        if (counts[c.pothole_id][c.reason] !== undefined) counts[c.pothole_id][c.reason]++;
+      });
+      return counts;
+    }
+
+    async function loadPotholesData(force = false) {
+      await schemaReady;
+      if (potholesCache.length && !force) return potholesCache;
+      potholesCache = (await fetchPotholes()).filter((row) => row.address);
+      contestsCache = await fetchContestCounts();
+      return potholesCache;
+    }
+
+    function renderContestCounts(potholeId) {
+      const counts = contestsCache[potholeId] || { wrong: 0, location: 0, fixed: 0 };
+      const total = counts.wrong + counts.location + counts.fixed;
+      if (!total) {
+        contestCounts.innerHTML = '<span class="contest-count">No contests yet</span>';
+        return;
+      }
+      contestCounts.innerHTML = Object.entries(counts)
+        .filter(([, n]) => n > 0)
+        .map(([reason, n]) => `<span class="contest-count">${n} ${CONTEST_LABELS[reason]}</span>`)
+        .join('');
+    }
+
+    function openPotholeDetail(row) {
+      selectedPothole = row;
+      contestStatus.textContent = '';
+      contestStatus.className = 'contest-status';
+      contestAddress.innerHTML = `<strong>Address:</strong> ${formatHistoryAddress(row.address)}`;
+      contestCoords.innerHTML = `<strong>Coordinates:</strong> ${formatCoordsOnly(row.latitude, row.longitude)} (±${Math.round(row.accuracy)}m)`;
+      contestWhen.innerHTML = `<strong>Logged:</strong> ${row.created_at ? shortWhen(row.created_at) : '—'} · ${cityForRow(row)}`;
+      renderContestCounts(row.id);
+      openPanel(contestPanel);
+    }
+
+    function closeContestPanel() {
+      closePanel(contestPanel);
+      if (!fixLocationPanel.classList.contains('open')) {
+        selectedPothole = null;
+      }
+    }
+
+    function scheduleFixGeocode(lat, lng) {
+      clearTimeout(fixGeocodeTimer);
+      fixAddressDisplay.textContent = 'Looking up address…';
+      fixAddressDisplay.className = 'address-display loading';
+      fixCoordDisplay.textContent = formatCoordsOnly(lat, lng);
+
+      fixGeocodeTimer = setTimeout(async () => {
+        try {
+          const result = await reverseGeocode(lat, lng);
+          fixAddressDisplay.textContent = result.address;
+          fixAddressDisplay.className = 'address-display';
+        } catch (_) {
+          fixAddressDisplay.textContent = 'Address unavailable';
+          fixAddressDisplay.className = 'address-display';
+        }
+      }, 350);
+    }
+
+    function initFixMap(lat, lng) {
+      fixOriginalLat = lat;
+      fixOriginalLng = lng;
+      const theme = htmlEl.dataset.theme || 'night';
+
+      if (!fixMap) {
+        fixMap = L.map('fixMap', { zoomControl: true, attributionControl: true, maxZoom: 20 });
+        fixMapTileLayer = L.tileLayer(mapTileUrl(theme), {
+          maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap &copy; CARTO',
+        }).addTo(fixMap);
+
+        fixMarker = L.marker([lat, lng], { draggable: true, icon: potholeIcon() }).addTo(fixMap);
+        fixMarker.on('dragend', () => {
+          const { lat: mLat, lng: mLng } = fixMarker.getLatLng();
+          scheduleFixGeocode(mLat, mLng);
+        });
+      } else {
+        fixMarker.setLatLng([lat, lng]);
+        updateMapTiles(theme);
+      }
+
+      fixMap.setView([lat, lng], 20);
+      scheduleFixGeocode(lat, lng);
+      requestAnimationFrame(() => fixMap.invalidateSize());
+    }
+
+    function openFixLocationPanel() {
+      if (!selectedPothole) return;
+      closePanel(contestPanel);
+      fixStatus.textContent = '';
+      fixStatus.className = 'contest-status';
+      saveFixLocationBtn.disabled = false;
+      cancelFixLocationBtn.disabled = false;
+      openPanel(fixLocationPanel);
+      initFixMap(selectedPothole.latitude, selectedPothole.longitude);
+    }
+
+    function closeFixLocationPanel() {
+      closePanel(fixLocationPanel);
+      selectedPothole = null;
+    }
+
+    async function updatePotholeRecord(id, latitude, longitude, address, city) {
+      const payload = { latitude, longitude };
+      if (address) payload.address = address;
+      if (city && schema.city) payload.city = city;
+
+      const { response, body } = await supabaseJson(
+        `${SUPABASE_URL}/rest/v1/potholes?id=eq.${id}`,
+        {
+          method: 'PATCH',
+          headers: {
+            ...apiHeaders(),
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal',
+          },
+          body: JSON.stringify(payload),
+        }
+      );
+
+      if (!response.ok) {
+        const needsPolicy = body?.code === '42501' || /policy/i.test(body?.message || '');
+        throw new Error(
+          needsPolicy
+            ? 'Updates not allowed — run supabase/schema.sql in Supabase.'
+            : (body?.message || `Update failed (${response.status})`)
+        );
+      }
+    }
+
+    async function saveFixLocation() {
+      if (!selectedPothole || !fixMarker || saveFixLocationBtn.disabled) return;
+
+      saveFixLocationBtn.disabled = true;
+      cancelFixLocationBtn.disabled = true;
+      fixStatus.textContent = 'Saving…';
+      fixStatus.className = 'contest-status';
+
+      try {
+        const { lat, lng } = fixMarker.getLatLng();
+        clearTimeout(fixGeocodeTimer);
+
+        let address = fixAddressDisplay.textContent;
+        let city = null;
+        if (address === 'Looking up address…' || address === 'Address unavailable') {
+          const result = await reverseGeocode(lat, lng).catch(() => null);
+          if (result) {
+            address = result.address;
+            city = result.city;
+          }
+        } else {
+          city = extractCity(address);
+        }
+
+        await updatePotholeRecord(selectedPothole.id, lat, lng, address, city);
+
+        const contestPayload = { pothole_id: selectedPothole.id, reason: 'location' };
+        if (userEmail && schema.reporter_email) contestPayload.reporter_email = userEmail;
+        const { response: contestRes } = await supabaseJson(`${SUPABASE_URL}/rest/v1/contests`, {
+          method: 'POST',
+          headers: {
+            ...apiHeaders(),
+            'Content-Type': 'application/json',
+            Prefer: 'return=minimal',
+          },
+          body: JSON.stringify(contestPayload),
+        });
+
+        if (contestRes.ok) {
+          schema.contests = true;
+          saveSchema();
+          if (!contestsCache[selectedPothole.id]) {
+            contestsCache[selectedPothole.id] = { wrong: 0, location: 0, fixed: 0 };
+          }
+          contestsCache[selectedPothole.id].location++;
+        }
+
+        invalidateData();
+        fixStatus.textContent = 'Location updated. Thanks!';
+        fixStatus.className = 'contest-status success';
+        if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
+
+        setTimeout(closeFixLocationPanel, 1200);
+      } catch (err) {
+        fixStatus.textContent = err.message || 'Could not save update.';
+        fixStatus.className = 'contest-status error';
+        saveFixLocationBtn.disabled = false;
+        cancelFixLocationBtn.disabled = false;
+      }
+    }
+
+    async function submitContest(reason) {
+      if (!selectedPothole) return;
+      contestStatus.textContent = 'Sending…';
+      contestStatus.className = 'contest-status';
+      document.querySelectorAll('.btn-contest').forEach((b) => { b.disabled = true; });
+
+      const payload = { pothole_id: selectedPothole.id, reason };
+      if (userEmail && schema.reporter_email) payload.reporter_email = userEmail;
+
+      const { response, body } = await supabaseJson(`${SUPABASE_URL}/rest/v1/contests`, {
+        method: 'POST',
+        headers: {
+          ...apiHeaders(),
+          'Content-Type': 'application/json',
+          Prefer: 'return=minimal',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      document.querySelectorAll('.btn-contest').forEach((b) => { b.disabled = false; });
+
+      if (!response.ok) {
+        const needsSetup = response.status === 404
+          || isMissingColumnError(body)
+          || /contests/i.test(body?.message || '');
+        contestStatus.textContent = needsSetup
+          ? 'Contests not set up — run supabase/schema.sql in Supabase.'
+          : (body?.message || 'Could not submit contest.');
+        contestStatus.className = 'contest-status error';
+        return;
+      }
+
+      schema.contests = true;
+      saveSchema();
+      if (!contestsCache[selectedPothole.id]) {
+        contestsCache[selectedPothole.id] = { wrong: 0, location: 0, fixed: 0 };
+      }
+      contestsCache[selectedPothole.id][reason]++;
+      renderContestCounts(selectedPothole.id);
+      contestStatus.textContent = 'Contest recorded. Thanks!';
+      contestStatus.className = 'contest-status success';
+      if (navigator.vibrate) navigator.vibrate(40);
+    }
+
+    async function loadAllMap() {
+      const theme = htmlEl.dataset.theme || 'night';
+      const rows = await loadPotholesData();
+
+      if (!allMap) {
+        allMap = L.map('allMap', { zoomControl: true, attributionControl: true, maxZoom: 20 });
+        allMapTileLayer = L.tileLayer(mapTileUrl(theme), {
+          maxZoom: 20, subdomains: 'abcd', attribution: '&copy; OpenStreetMap &copy; CARTO',
+        }).addTo(allMap);
+        allMarkersLayer = L.layerGroup().addTo(allMap);
+      } else {
+        allMarkersLayer.clearLayers();
+        updateMapTiles(theme);
+      }
+
+      if (!rows.length) {
+        allMap.setView([43.65, -79.38], 11);
+        mapLoaded = true;
+        return;
+      }
+
+      const bounds = [];
+      rows.forEach((row) => {
+        const m = L.marker([row.latitude, row.longitude], { icon: potholeIcon() });
+        m.on('click', () => openPotholeDetail(row));
+        m.bindTooltip(shortAddress(row.address), { direction: 'top', offset: [0, -28] });
+        allMarkersLayer.addLayer(m);
+        bounds.push([row.latitude, row.longitude]);
+      });
+
+      allMap.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
+      mapLoaded = true;
+      requestAnimationFrame(() => allMap.invalidateSize());
     }
 
     async function loadHistory() {
-      historyContent.innerHTML = '<p class="history-loading">Loading history…</p>';
+      historyContent.innerHTML = '<p class="history-loading">Loading…</p>';
       try {
-        const rows = await fetchPotholes();
+        const rows = await loadPotholesData();
         historyLoaded = true;
         if (!rows.length) {
-          historyContent.innerHTML = '<p class="history-empty">No potholes logged yet. Hit one!</p>';
+          historyContent.innerHTML = '<p class="history-empty">No potholes yet.</p>';
           return;
         }
-        historyContent.innerHTML = `<ul class="history-list">${rows.map((row) => `
-          <li class="history-item">
-            <time datetime="${row.created_at}">${formatDate(row.created_at)}</time>
-            <p class="address">${row.address || 'No address recorded'}</p>
-            <p class="coords">${formatCoords(row.latitude, row.longitude, row.accuracy)}</p>
-          </li>
-        `).join('')}</ul>`;
+        const cityCounts = buildCityCounts(rows);
+        historyContent.innerHTML = `
+          <div class="city-counts">
+            ${cityCounts.map(([city, count]) => `
+              <span class="city-chip"><strong>${count}</strong> ${city}</span>
+            `).join('')}
+          </div>
+          <p class="review-hint" style="margin:0 0 0.5rem;text-align:left;">Tap a row to contest a report.</p>
+          <div class="history-table-wrap">
+            <table class="history-table">
+              <thead>
+                <tr><th>When</th><th>City</th><th>Address</th><th>Coordinates</th><th>±m</th></tr>
+              </thead>
+              <tbody>
+                ${rows.map((row) => `
+                  <tr class="clickable" data-id="${row.id}">
+                    <td class="when">${shortWhen(row.created_at)}</td>
+                    <td class="city">${cityForRow(row)}</td>
+                    <td class="address">${formatHistoryAddress(row.address)}</td>
+                    <td class="coords">${formatCoordsOnly(row.latitude, row.longitude)}</td>
+                    <td class="acc">${Math.round(row.accuracy)}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+          </div>`;
+
+        historyContent.querySelector('tbody').addEventListener('click', (e) => {
+          const tr = e.target.closest('tr[data-id]');
+          if (!tr) return;
+          const row = rows.find((r) => String(r.id) === tr.dataset.id);
+          if (row) openPotholeDetail(row);
+        });
       } catch (err) {
         historyContent.innerHTML = `<p class="history-error">${err.message}</p>`;
       }
@@ -825,143 +1748,141 @@
       setBusy(true);
       if (navigator.vibrate) navigator.vibrate(80);
       try {
-        setStatus('Getting location...', 'loading');
+        setStatus('Getting location…', 'loading');
         const position = await getCurrentPosition();
         const { latitude, longitude, accuracy } = position.coords;
+        pendingLat = latitude;
+        pendingLng = longitude;
         pendingAccuracy = accuracy;
-        initMap(latitude, longitude, accuracy);
+        pendingAddress = null;
+        pendingCity = null;
+
+        addressDisplay.textContent = 'Looking up address…';
+        addressDisplay.className = 'address-display loading';
+        coordDisplay.textContent = formatCoords(latitude, longitude, accuracy);
+
+        try {
+          const result = await reverseGeocode(latitude, longitude);
+          pendingAddress = result.address;
+          pendingCity = result.city;
+          addressDisplay.textContent = pendingAddress;
+          addressDisplay.className = 'address-display';
+        } catch (_) {
+          addressDisplay.textContent = 'Address unavailable';
+          addressDisplay.className = 'address-display';
+        }
+
         openReview();
-        setStatus('Confirm the pin on the map.', 'loading');
+        setStatus('Confirm location.', 'loading');
       } catch (err) {
-        setStatus(err.message || 'Could not get location. Try again.', 'error');
+        setStatus(err.message || 'Location failed.', 'error');
       } finally {
         setBusy(false);
       }
     }
 
     async function confirmLog() {
-      if (!marker || confirmLogBtn.disabled) return;
-      const { lat, lng } = marker.getLatLng();
+      if (pendingLat == null || confirmLogBtn.disabled) return;
       confirmLogBtn.disabled = true;
       cancelReviewBtn.disabled = true;
-      confirmLogBtn.textContent = 'Sending...';
+      confirmLogBtn.textContent = 'Sending…';
 
       try {
-        clearTimeout(geocodeTimer);
         if (!pendingAddress) {
-          addressDisplay.textContent = 'Looking up address…';
-          pendingAddress = await reverseGeocode(lat, lng).catch(() => null);
+          const result = await reverseGeocode(pendingLat, pendingLng).catch(() => null);
+          if (result) {
+            pendingAddress = result.address;
+            pendingCity = result.city;
+          }
         }
 
-        await insertPothole(lat, lng, pendingAccuracy, pendingAddress);
-        historyLoaded = false;
+        await insertPothole(pendingLat, pendingLng, pendingAccuracy, pendingAddress, pendingCity);
+        invalidateData();
 
-        const addr = pendingAddress ? ` — ${pendingAddress.split(',')[0]}` : '';
-        setStatus(`Logged! ${formatCoords(lat, lng, pendingAccuracy)}${addr}`, 'success');
+        setStatus(`Logged! ${shortAddress(pendingAddress)}`, 'success');
         confirmLogBtn.textContent = 'Logged!';
         confirmLogBtn.className = 'btn btn-success';
         if (navigator.vibrate) navigator.vibrate([60, 40, 60]);
 
         setTimeout(() => {
           if (reviewOpen) closeReview();
-          setStatus('Ready to log strike.', 'neutral');
-        }, 1800);
+          setStatus('Ready.', 'neutral');
+          pendingLat = null;
+          pendingLng = null;
+        }, 1500);
       } catch (err) {
-        setStatus(err.message || 'Transmission failed. Try again.', 'error');
+        setStatus(err.message || 'Failed.', 'error');
         confirmLogBtn.disabled = false;
         cancelReviewBtn.disabled = false;
         confirmLogBtn.textContent = 'Log pothole';
       }
     }
 
-    async function signIn(email, password) {
-      const response = await fetch(`${SUPABASE_URL}/auth/v1/token?grant_type=password`, {
-        method: 'POST',
-        headers: { ...apiHeaders(false), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.msg || data.error_description || 'Sign in failed');
-      saveSession(data);
-    }
+    hitButton.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      startReview();
+    });
 
-    async function signUp(email, password) {
-      const response = await fetch(`${SUPABASE_URL}/auth/v1/signup`, {
-        method: 'POST',
-        headers: { ...apiHeaders(false), 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.msg || data.error_description || 'Sign up failed');
-      if (data.access_token) {
-        saveSession(data);
-      } else {
-        throw new Error('Check your email to confirm your account, then sign in.');
-      }
-    }
-
-    function signOut() {
-      saveSession(null);
-    }
-
-    hitButton.addEventListener('click', startReview);
     confirmLogBtn.addEventListener('click', confirmLog);
     cancelReviewBtn.addEventListener('click', () => {
       closeReview();
-      setStatus('Ready to log strike.', 'neutral');
+      setStatus('Ready.', 'neutral');
     });
     backdrop.addEventListener('click', () => {
       if (!confirmLogBtn.disabled) {
         closeReview();
-        setStatus('Ready to log strike.', 'neutral');
+        setStatus('Ready.', 'neutral');
       }
-      closeAuth();
+      closeAuthPanel();
+      closeContestPanel();
+      closeFixLocationPanel();
     });
 
     tabLog.addEventListener('click', () => switchView('log'));
+    tabMap.addEventListener('click', () => switchView('map'));
     tabHistory.addEventListener('click', () => switchView('history'));
-    refreshHistoryBtn.addEventListener('click', () => { historyLoaded = false; loadHistory(); });
+    refreshHistoryBtn.addEventListener('click', () => { invalidateData(); loadHistory(); });
+    refreshMapBtn.addEventListener('click', () => { invalidateData(); loadAllMap(); });
+    themeToggle.addEventListener('click', toggleTheme);
 
-    authBtn.addEventListener('click', () => {
-      if (session?.user?.email) {
-        signOut();
-      } else {
-        openAuth();
-      }
+    document.querySelectorAll('.btn-contest').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        if (btn.dataset.reason === 'location') {
+          openFixLocationPanel();
+        } else {
+          submitContest(btn.dataset.reason);
+        }
+      });
+    });
+    closeContestBtn.addEventListener('click', closeContestPanel);
+    saveFixLocationBtn.addEventListener('click', saveFixLocation);
+    cancelFixLocationBtn.addEventListener('click', closeFixLocationPanel);
+
+    authBtn.addEventListener('click', openAuth);
+
+    clearEmailBtn.addEventListener('click', () => {
+      saveEmail('');
+      closeAuthPanel();
     });
 
-    authToggle.addEventListener('click', () => {
-      authMode = authMode === 'signin' ? 'signup' : 'signin';
-      authTitle.textContent = authMode === 'signin' ? 'Sign in' : 'Create account';
-      authSubmit.textContent = authMode === 'signin' ? 'Sign in' : 'Create account';
-      authToggle.textContent = authMode === 'signin' ? 'Create account' : 'Already have an account?';
-      authError.hidden = true;
-    });
+    cancelAuth.addEventListener('click', closeAuthPanel);
 
-    cancelAuth.addEventListener('click', closeAuth);
-
-    authForm.addEventListener('submit', async (e) => {
+    authForm.addEventListener('submit', (e) => {
       e.preventDefault();
       authError.hidden = true;
-      authSubmit.disabled = true;
       const email = document.getElementById('authEmail').value.trim();
-      const password = document.getElementById('authPassword').value;
-      try {
-        if (authMode === 'signin') {
-          await signIn(email, password);
-        } else {
-          await signUp(email, password);
-        }
-        closeAuth();
-      } catch (err) {
-        authError.textContent = err.message;
+      if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+        authError.textContent = 'Enter a valid email or leave blank.';
         authError.hidden = false;
-      } finally {
-        authSubmit.disabled = false;
+        return;
       }
+      saveEmail(email);
+      closeAuthPanel();
     });
 
-    updateAuthButton();
+    loadTheme();
+    updateEmailButton();
+    schemaReady = detectSchema();
   </script>
 </body>
 </html>
