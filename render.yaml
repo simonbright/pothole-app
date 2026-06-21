@@ -1,5 +1,10 @@
 # Two services: static site (instant CDN) + API (photo upload/review only).
-# After pushing, open Render → Blueprint → Sync. Delete any old single web service if duplicated.
+#
+# Render cannot convert an existing Web Service into a Static Site via Blueprint sync.
+# If sync fails with "changing service type not supported":
+#   1. Dashboard → delete the old "pothole-app" Web Service
+#   2. Blueprint → Manual sync
+# Main app URL: https://pothole-web.onrender.com
 services:
   - type: web
     name: pothole-api
@@ -21,7 +26,7 @@ services:
         sync: false
 
   - type: web
-    name: pothole-app
+    name: pothole-web
     runtime: static
     buildCommand: npm run build:static
     staticPublishPath: ./_site
