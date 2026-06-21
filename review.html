@@ -1,36 +1,93 @@
 <!DOCTYPE html>
-<html lang="en" data-theme="night">
+<html lang="en" data-theme="day">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#f4f4f5">
   <title>Photo review — Pothole Log</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
+
+    :root, [data-theme="night"] {
+      --bg: #09090b;
+      --bg-panel: #18181b;
+      --bg-input: #09090b;
+      --bg-btn-ghost: #27272a;
+      --border: #3f3f46;
+      --text: #fff;
+      --text-secondary: #a1a1aa;
+      --text-muted: #71717a;
+      --error: #f87171;
+      --reject-text: #fca5a5;
+      --reject-border: #7f1d1d;
+      --thumb-bg: #27272a;
+      --lightbox-close-bg: #27272a;
+    }
+
+    [data-theme="day"] {
+      --bg: #f4f4f5;
+      --bg-panel: #fff;
+      --bg-input: #f4f4f5;
+      --bg-btn-ghost: #e4e4e7;
+      --border: rgba(0, 0, 0, 0.12);
+      --text: #18181b;
+      --text-secondary: #52525b;
+      --text-muted: #71717a;
+      --error: #dc2626;
+      --reject-text: #b91c1c;
+      --reject-border: #fecaca;
+      --thumb-bg: #e4e4e7;
+      --lightbox-close-bg: rgba(255, 255, 255, 0.15);
+    }
+
     body {
       margin: 0;
       font-family: system-ui, -apple-system, sans-serif;
-      background: #09090b;
-      color: #fff;
+      background: var(--bg);
+      color: var(--text);
       min-height: 100vh;
+      transition: background 0.2s, color 0.2s;
     }
     .wrap { max-width: 52rem; margin: 0 auto; padding: 1.25rem 1rem 2rem; }
+    .page-head {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 1.25rem;
+    }
+    .page-head-main { min-width: 0; }
     h1 { margin: 0 0 0.25rem; font-size: 1.35rem; }
-    .sub { margin: 0 0 1.25rem; color: #a1a1aa; font-size: 0.875rem; line-height: 1.45; }
+    .sub { margin: 0; color: var(--text-secondary); font-size: 0.875rem; line-height: 1.45; }
+    .icon-btn {
+      flex-shrink: 0;
+      border: 0;
+      background: var(--bg-btn-ghost);
+      color: var(--text-secondary);
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0.45rem 0.55rem;
+      border-radius: 0.5rem;
+      line-height: 1;
+      min-height: 2.25rem;
+      touch-action: manipulation;
+    }
     .card {
-      background: #18181b;
-      border: 1px solid #3f3f46;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
       border-radius: 0.85rem;
       padding: 1rem;
       margin-bottom: 1rem;
+      transition: background 0.2s, border-color 0.2s;
     }
-    label { display: block; font-size: 0.8125rem; font-weight: 700; margin-bottom: 0.35rem; color: #a1a1aa; }
+    label { display: block; font-size: 0.8125rem; font-weight: 700; margin-bottom: 0.35rem; color: var(--text-secondary); }
     input[type="password"] {
       width: 100%;
       padding: 0.75rem 0.85rem;
       border-radius: 0.6rem;
-      border: 1px solid #3f3f46;
-      background: #09090b;
-      color: #fff;
+      border: 1px solid var(--border);
+      background: var(--bg-input);
+      color: var(--text);
       font-size: 1rem;
     }
     .btn {
@@ -43,20 +100,21 @@
       touch-action: manipulation;
     }
     .btn-primary { background: #ef4444; color: #fff; width: 100%; margin-top: 0.65rem; }
-    .btn-ghost { background: #27272a; color: #fff; }
+    .btn-ghost { background: var(--bg-btn-ghost); color: var(--text); }
     .btn-approve { background: #059669; color: #fff; flex: 1; }
-    .btn-reject { background: #27272a; color: #fca5a5; flex: 1; border: 1px solid #7f1d1d; }
+    .btn-reject { background: var(--bg-btn-ghost); color: var(--reject-text); flex: 1; border: 1px solid var(--reject-border); }
     .toolbar { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem; }
-    .count { font-size: 0.875rem; color: #a1a1aa; flex: 1; }
+    .count { font-size: 0.875rem; color: var(--text-secondary); flex: 1; }
     .grid { display: grid; gap: 1rem; }
     .item {
       display: grid;
       grid-template-columns: 10rem 1fr;
       gap: 0.85rem;
-      background: #18181b;
-      border: 1px solid #3f3f46;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
       border-radius: 0.85rem;
       padding: 0.85rem;
+      transition: background 0.2s, border-color 0.2s;
     }
     .item-thumb {
       position: relative;
@@ -83,8 +141,8 @@
     .item-thumb img.is-missing {
       object-fit: contain;
       padding: 1rem;
-      color: #71717a;
-      background: #27272a;
+      color: var(--text-muted);
+      background: var(--thumb-bg);
     }
 
     .item-thumb-placeholder {
@@ -95,13 +153,15 @@
       aspect-ratio: 1;
       padding: 0.75rem;
       border-radius: 0.55rem;
-      background: #27272a;
-      color: #a1a1aa;
+      background: var(--thumb-bg);
+      color: var(--text-secondary);
       font-size: 0.75rem;
       font-weight: 600;
       text-align: center;
       line-height: 1.35;
     }
+
+    .item-thumb-hint {
       position: absolute;
       left: 0;
       right: 0;
@@ -118,10 +178,10 @@
     }
     .item-meta { min-width: 0; }
     .item-meta h2 { margin: 0 0 0.35rem; font-size: 0.9375rem; line-height: 1.35; }
-    .item-meta p { margin: 0 0 0.65rem; font-size: 0.75rem; color: #a1a1aa; }
+    .item-meta p { margin: 0 0 0.65rem; font-size: 0.75rem; color: var(--text-secondary); }
     .item-actions { display: flex; gap: 0.5rem; }
-    .empty, .error, .loading { color: #a1a1aa; font-size: 0.9375rem; padding: 1rem 0; }
-    .error { color: #f87171; }
+    .empty, .error, .loading { color: var(--text-secondary); font-size: 0.9375rem; padding: 1rem 0; }
+    .error { color: var(--error); }
     .hidden { display: none !important; }
 
     .lightbox {
@@ -159,7 +219,7 @@
       border-radius: 9999px;
       width: 2.5rem;
       height: 2.5rem;
-      background: #27272a;
+      background: var(--lightbox-close-bg);
       color: #fff;
       font-size: 1.25rem;
       line-height: 1;
@@ -192,12 +252,17 @@
 </head>
 <body>
   <div class="wrap">
-    <h1>Photo review</h1>
-    <p class="sub">Approve pothole photos before they appear in the app. Rejected photos are deleted.</p>
+    <div class="page-head">
+      <div class="page-head-main">
+        <h1>Photo review</h1>
+        <p class="sub">Approve pothole photos before they appear in the app. Rejected photos are deleted.</p>
+      </div>
+      <button id="themeToggle" type="button" class="icon-btn" aria-label="Toggle day/night mode" title="Switch to night mode">🌙</button>
+    </div>
 
     <section id="loginCard" class="card">
       <label for="secret">Review password</label>
-      <input id="secret" type="password" autocomplete="current-password" placeholder="Set in Netlify as PHOTO_REVIEW_SECRET">
+      <input id="secret" type="password" autocomplete="current-password" placeholder="PHOTO_REVIEW_SECRET">
       <button id="loginBtn" type="button" class="btn btn-primary">Open queue</button>
       <p id="loginError" class="error hidden"></p>
     </section>
@@ -226,7 +291,10 @@
   <script>
     const API = '/api/photo-review';
     const STORAGE_KEY = 'pothole_review_secret';
+    const THEME_KEY = 'pothole_theme';
 
+    const htmlEl = document.documentElement;
+    const themeToggle = document.getElementById('themeToggle');
     const loginCard = document.getElementById('loginCard');
     const queueSection = document.getElementById('queueSection');
     const secretInput = document.getElementById('secret');
@@ -241,6 +309,25 @@
     const lightboxImg = document.getElementById('lightboxImg');
     const lightboxCaption = document.getElementById('lightboxCaption');
     const lightboxClose = document.getElementById('lightboxClose');
+
+    function loadTheme() {
+      const saved = localStorage.getItem(THEME_KEY);
+      const theme = saved === 'night' ? 'night' : 'day';
+      applyTheme(theme);
+    }
+
+    function applyTheme(theme) {
+      htmlEl.dataset.theme = theme;
+      localStorage.setItem(THEME_KEY, theme);
+      themeToggle.textContent = theme === 'day' ? '🌙' : '☀️';
+      themeToggle.title = theme === 'day' ? 'Switch to night mode' : 'Switch to day mode';
+      const metaTheme = document.querySelector('meta[name="theme-color"]');
+      if (metaTheme) metaTheme.content = theme === 'day' ? '#f4f4f5' : '#09090b';
+    }
+
+    function toggleTheme() {
+      applyTheme(htmlEl.dataset.theme === 'day' ? 'night' : 'day');
+    }
 
     function getSecret() {
       return sessionStorage.getItem(STORAGE_KEY) || '';
@@ -416,6 +503,9 @@
     document.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' && !lightbox.classList.contains('hidden')) closeLightbox();
     });
+
+    themeToggle.addEventListener('click', toggleTheme);
+    loadTheme();
 
     if (getSecret()) showQueue();
   </script>

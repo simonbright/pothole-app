@@ -8,7 +8,9 @@
   },
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "start:api": "API_ONLY=1 node server.js",
+    "dev": "node server.js",
+    "build:static": "mkdir -p _site && cp index.html review.html favicon.svg _site/"
   },
   "dependencies": {
     "express": "^4.21.2",

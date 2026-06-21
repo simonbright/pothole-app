@@ -1,17 +1,47 @@
+# Two services: static site (instant CDN) + API (photo upload/review only).
+# After pushing, open Render → Blueprint → Sync. Delete any old single web service if duplicated.
 services:
   - type: web
-    name: pothole-app
+    name: pothole-api
     runtime: node
     plan: free
     buildCommand: npm install
-    startCommand: npm start
-    healthCheckPath: /
+    startCommand: npm run start:api
+    healthCheckPath: /health
     envVars:
       - key: NODE_VERSION
         value: 20
+      - key: API_ONLY
+        value: "true"
       - key: SUPABASE_URL
         value: https://cfhuqcpojontkwhpkzyn.supabase.co
       - key: SUPABASE_SERVICE_ROLE_KEY
         sync: false
       - key: PHOTO_REVIEW_SECRET
         sync: false
+
+  - type: web
+    name: pothole-app
+    runtime: static
+    buildCommand: npm run build:static
+    staticPublishPath: ./_site
+    routes:
+      - type: redirect
+        source: /favicon.ico
+        destination: /favicon.svg
+      - type: rewrite
+        source: /api/*
+        destination: https://pothole-api.onrender.com/api/*
+      - type: rewrite
+        source: /.netlify/functions/*
+        destination: https://pothole-api.onrender.com/.netlify/functions/*
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin

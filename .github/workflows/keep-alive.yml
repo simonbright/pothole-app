@@ -1,0 +1,19 @@
+name: Keep Render API warm
+
+on:
+  schedule:
+    # Render free tier sleeps after ~15 min idle; ping every 10 min.
+    - cron: '*/10 * * * *'
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping pothole-api health
+        run: |
+          URL="${{ secrets.RENDER_API_URL }}"
+          if [ -z "$URL" ]; then
+            URL="https://pothole-api.onrender.com/health"
+          fi
+          curl -fsS --max-time 60 "$URL" || echo "Ping failed (API may be cold-starting)"
