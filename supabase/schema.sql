@@ -5,6 +5,10 @@ alter table public.potholes
   add column if not exists city text,
   add column if not exists user_id uuid references auth.users(id),
   add column if not exists reporter_email text,
+  add column if not exists photo_url text,
+  add column if not exists photo_status text check (photo_status in ('pending', 'approved', 'rejected')),
+  add column if not exists photo_path text,
+  add column if not exists report_type text not null default 'pothole',
   add column if not exists created_at timestamptz not null default now();
 
 -- Remove empty trial rows (no address saved)
@@ -22,7 +26,7 @@ using (true);
 create table if not exists public.contests (
   id bigint generated always as identity primary key,
   pothole_id bigint not null references public.potholes(id) on delete cascade,
-  reason text not null check (reason in ('wrong', 'location', 'fixed')),
+  reason text not null check (reason in ('wrong', 'location', 'fixed', 'duplicate')),
   reporter_email text,
   created_at timestamptz not null default now()
 );

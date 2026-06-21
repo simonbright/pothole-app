@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: pothole-app
+    runtime: node
+    plan: free
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      - key: SUPABASE_URL
+        value: https://cfhuqcpojontkwhpkzyn.supabase.co
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
+      - key: PHOTO_REVIEW_SECRET
+        sync: false

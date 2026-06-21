@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="night">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Photo review — Pothole Log</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #09090b;
+      color: #fff;
+      min-height: 100vh;
+    }
+    .wrap { max-width: 52rem; margin: 0 auto; padding: 1.25rem 1rem 2rem; }
+    h1 { margin: 0 0 0.25rem; font-size: 1.35rem; }
+    .sub { margin: 0 0 1.25rem; color: #a1a1aa; font-size: 0.875rem; line-height: 1.45; }
+    .card {
+      background: #18181b;
+      border: 1px solid #3f3f46;
+      border-radius: 0.85rem;
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+    label { display: block; font-size: 0.8125rem; font-weight: 700; margin-bottom: 0.35rem; color: #a1a1aa; }
+    input[type="password"] {
+      width: 100%;
+      padding: 0.75rem 0.85rem;
+      border-radius: 0.6rem;
+      border: 1px solid #3f3f46;
+      background: #09090b;
+      color: #fff;
+      font-size: 1rem;
+    }
+    .btn {
+      border: 0;
+      border-radius: 0.6rem;
+      padding: 0.7rem 1rem;
+      font-size: 0.9375rem;
+      font-weight: 800;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+    .btn-primary { background: #ef4444; color: #fff; width: 100%; margin-top: 0.65rem; }
+    .btn-ghost { background: #27272a; color: #fff; }
+    .btn-approve { background: #059669; color: #fff; flex: 1; }
+    .btn-reject { background: #27272a; color: #fca5a5; flex: 1; border: 1px solid #7f1d1d; }
+    .toolbar { display: flex; gap: 0.5rem; align-items: center; margin-bottom: 1rem; }
+    .count { font-size: 0.875rem; color: #a1a1aa; flex: 1; }
+    .grid { display: grid; gap: 1rem; }
+    .item {
+      display: grid;
+      grid-template-columns: 10rem 1fr;
+      gap: 0.85rem;
+      background: #18181b;
+      border: 1px solid #3f3f46;
+      border-radius: 0.85rem;
+      padding: 0.85rem;
+    }
+    .item-thumb {
+      position: relative;
+      border: 0;
+      padding: 0;
+      background: none;
+      cursor: zoom-in;
+      border-radius: 0.55rem;
+      overflow: hidden;
+      touch-action: manipulation;
+    }
+    .item-thumb:focus-visible {
+      outline: 2px solid #ef4444;
+      outline-offset: 2px;
+    }
+    .item-thumb img {
+      display: block;
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      border-radius: 0.55rem;
+      background: #000;
+    }
+    .item-thumb img.is-missing {
+      object-fit: contain;
+      padding: 1rem;
+      color: #71717a;
+      background: #27272a;
+    }
+
+    .item-thumb-placeholder {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      aspect-ratio: 1;
+      padding: 0.75rem;
+      border-radius: 0.55rem;
+      background: #27272a;
+      color: #a1a1aa;
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-align: center;
+      line-height: 1.35;
+    }
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      padding: 0.35rem 0.45rem;
+      font-size: 0.625rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      text-align: center;
+      color: #fff;
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.75));
+      pointer-events: none;
+    }
+    .item-meta { min-width: 0; }
+    .item-meta h2 { margin: 0 0 0.35rem; font-size: 0.9375rem; line-height: 1.35; }
+    .item-meta p { margin: 0 0 0.65rem; font-size: 0.75rem; color: #a1a1aa; }
+    .item-actions { display: flex; gap: 0.5rem; }
+    .empty, .error, .loading { color: #a1a1aa; font-size: 0.9375rem; padding: 1rem 0; }
+    .error { color: #f87171; }
+    .hidden { display: none !important; }
+
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0.92);
+      backdrop-filter: blur(6px);
+    }
+
+    .lightbox-header {
+      width: min(100%, 42rem);
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+    }
+
+    .lightbox-caption {
+      margin: 0;
+      font-size: 0.875rem;
+      line-height: 1.4;
+      color: #e4e4e7;
+    }
+
+    .lightbox-close {
+      flex-shrink: 0;
+      border: 0;
+      border-radius: 9999px;
+      width: 2.5rem;
+      height: 2.5rem;
+      background: #27272a;
+      color: #fff;
+      font-size: 1.25rem;
+      line-height: 1;
+      cursor: pointer;
+    }
+
+    .lightbox-img-wrap {
+      width: min(100%, 42rem);
+      max-height: calc(100vh - 7rem);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .lightbox-img-wrap img {
+      max-width: 100%;
+      max-height: calc(100vh - 7rem);
+      width: auto;
+      height: auto;
+      object-fit: contain;
+      border-radius: 0.55rem;
+      background: #000;
+    }
+
+    @media (max-width: 520px) {
+      .item { grid-template-columns: 1fr; }
+      .item-thumb img { max-height: 16rem; aspect-ratio: auto; }
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Photo review</h1>
+    <p class="sub">Approve pothole photos before they appear in the app. Rejected photos are deleted.</p>
+
+    <section id="loginCard" class="card">
+      <label for="secret">Review password</label>
+      <input id="secret" type="password" autocomplete="current-password" placeholder="Set in Netlify as PHOTO_REVIEW_SECRET">
+      <button id="loginBtn" type="button" class="btn btn-primary">Open queue</button>
+      <p id="loginError" class="error hidden"></p>
+    </section>
+
+    <section id="queueSection" class="hidden">
+      <div class="toolbar">
+        <span id="queueCount" class="count">Loading…</span>
+        <button id="refreshBtn" type="button" class="btn btn-ghost">↻ Refresh</button>
+        <button id="logoutBtn" type="button" class="btn btn-ghost">Lock</button>
+      </div>
+      <div id="queueStatus" class="loading">Loading pending photos…</div>
+      <div id="queueGrid" class="grid"></div>
+    </section>
+  </div>
+
+  <div id="lightbox" class="lightbox hidden" role="dialog" aria-modal="true" aria-label="Photo preview">
+    <div class="lightbox-header">
+      <p id="lightboxCaption" class="lightbox-caption"></p>
+      <button id="lightboxClose" type="button" class="lightbox-close" aria-label="Close">×</button>
+    </div>
+    <div class="lightbox-img-wrap">
+      <img id="lightboxImg" alt="Enlarged pothole photo">
+    </div>
+  </div>
+
+  <script>
+    const API = '/api/photo-review';
+    const STORAGE_KEY = 'pothole_review_secret';
+
+    const loginCard = document.getElementById('loginCard');
+    const queueSection = document.getElementById('queueSection');
+    const secretInput = document.getElementById('secret');
+    const loginBtn = document.getElementById('loginBtn');
+    const loginError = document.getElementById('loginError');
+    const queueCount = document.getElementById('queueCount');
+    const queueStatus = document.getElementById('queueStatus');
+    const queueGrid = document.getElementById('queueGrid');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const lightbox = document.getElementById('lightbox');
+    const lightboxImg = document.getElementById('lightboxImg');
+    const lightboxCaption = document.getElementById('lightboxCaption');
+    const lightboxClose = document.getElementById('lightboxClose');
+
+    function getSecret() {
+      return sessionStorage.getItem(STORAGE_KEY) || '';
+    }
+
+    function setSecret(value) {
+      if (value) sessionStorage.setItem(STORAGE_KEY, value);
+      else sessionStorage.removeItem(STORAGE_KEY);
+    }
+
+    async function api(action, extra = {}) {
+      const secret = getSecret();
+      const response = await fetch(API, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Review-Secret': secret,
+        },
+        body: JSON.stringify({ action, secret, ...extra }),
+      });
+      let body = null;
+      try { body = await response.json(); } catch (_) {}
+      if (!response.ok) throw new Error(body?.error || `Request failed (${response.status})`);
+      return body;
+    }
+
+    function formatWhen(iso) {
+      if (!iso) return '—';
+      return new Date(iso).toLocaleString(undefined, {
+        month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
+      });
+    }
+
+    function shortAddr(address) {
+      if (!address) return 'Unknown address';
+      return address.replace(/, Canada$/i, '').split(',').slice(0, 3).join(', ');
+    }
+
+    function openLightbox(url, caption) {
+      if (!lightbox || !lightboxImg) return;
+      if (!url) {
+        alert('Preview unavailable — try Refresh, or re-upload the photo from the app.');
+        return;
+      }
+      lightboxImg.src = url;
+      if (lightboxCaption) lightboxCaption.textContent = caption || '';
+      lightbox.classList.remove('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeLightbox() {
+      if (!lightbox || !lightboxImg) return;
+      lightbox.classList.add('hidden');
+      lightboxImg.removeAttribute('src');
+      document.body.style.overflow = '';
+    }
+
+    function renderItems(items) {
+      queueGrid.innerHTML = '';
+      if (!items.length) {
+        queueStatus.textContent = 'No photos waiting for review.';
+        queueStatus.className = 'empty';
+        return;
+      }
+      queueStatus.textContent = '';
+      queueStatus.className = 'hidden';
+      items.forEach((row) => {
+        const el = document.createElement('article');
+        el.className = 'item';
+        const hasPreview = !!row.previewUrl;
+        const thumbInner = hasPreview
+          ? `<img src="${row.previewUrl}" alt="Pending pothole photo">`
+          : `<div class="item-thumb-placeholder">Preview unavailable<br><small>Refresh or reject</small></div>`;
+        el.innerHTML = `
+          <button type="button" class="item-thumb" data-preview="${row.previewUrl || ''}" data-caption="${shortAddr(row.address).replace(/"/g, '&quot;')}" ${hasPreview ? '' : 'disabled'}>
+            ${thumbInner}
+            ${hasPreview ? '<span class="item-thumb-hint">Tap to enlarge</span>' : ''}
+          </button>
+          <div class="item-meta">
+            <h2>${shortAddr(row.address)}</h2>
+            <p>#${row.id} · ${formatWhen(row.created_at)}</p>
+            <div class="item-actions">
+              <button type="button" class="btn btn-approve" data-action="approve" data-id="${row.id}">Approve</button>
+              <button type="button" class="btn btn-reject" data-action="reject" data-id="${row.id}">Reject</button>
+            </div>
+          </div>`;
+        queueGrid.appendChild(el);
+      });
+    }
+
+    async function loadQueue() {
+      queueStatus.textContent = 'Loading pending photos…';
+      queueStatus.className = 'loading';
+      queueStatus.hidden = false;
+      try {
+        const { items, count } = await api('list');
+        queueCount.textContent = count === 1 ? '1 photo pending' : `${count} photos pending`;
+        renderItems(items || []);
+      } catch (err) {
+        queueStatus.textContent = err.message;
+        queueStatus.className = 'error';
+        queueStatus.hidden = false;
+        queueGrid.innerHTML = '';
+        if (/invalid review password/i.test(err.message)) {
+          setSecret('');
+          showLogin(err.message);
+        }
+      }
+    }
+
+    function showQueue() {
+      loginCard.classList.add('hidden');
+      queueSection.classList.remove('hidden');
+      loadQueue();
+    }
+
+    function showLogin(message = '') {
+      queueSection.classList.add('hidden');
+      loginCard.classList.remove('hidden');
+      loginError.textContent = message;
+      loginError.classList.toggle('hidden', !message);
+    }
+
+    loginBtn.addEventListener('click', () => {
+      const secret = secretInput.value.trim();
+      if (!secret) {
+        loginError.textContent = 'Enter the review password.';
+        loginError.hidden = false;
+        return;
+      }
+      setSecret(secret);
+      loginError.hidden = true;
+      showQueue();
+    });
+
+    secretInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') loginBtn.click();
+    });
+
+    refreshBtn.addEventListener('click', loadQueue);
+    logoutBtn.addEventListener('click', () => {
+      setSecret('');
+      secretInput.value = '';
+      showLogin();
+    });
+
+    queueGrid.addEventListener('click', async (e) => {
+      const thumb = e.target.closest('.item-thumb');
+      if (thumb?.dataset.preview) {
+        openLightbox(thumb.dataset.preview, thumb.dataset.caption);
+        return;
+      }
+
+      const btn = e.target.closest('button[data-action]');
+      if (!btn || btn.disabled) return;
+      const { action, id } = btn.dataset;
+      btn.disabled = true;
+      btn.textContent = action === 'approve' ? '…' : '…';
+      try {
+        await api(action, { id });
+        await loadQueue();
+      } catch (err) {
+        alert(err.message);
+        btn.disabled = false;
+        btn.textContent = action === 'approve' ? 'Approve' : 'Reject';
+      }
+    });
+
+    lightboxClose.addEventListener('click', closeLightbox);
+    lightbox.addEventListener('click', (e) => {
+      if (e.target === lightbox) closeLightbox();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && !lightbox.classList.contains('hidden')) closeLightbox();
+    });
+
+    if (getSecret()) showQueue();
+  </script>
+</body>
+</html>
